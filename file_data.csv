@@ -1,0 +1,26 @@
+string, formatted, max, aggregate, chartType, isDefault, isDate, interval
+data/truncate/week/stddev_preal.csv, week, 12.6939259881, standard deviation, LineChart, False, True, 366
+data/truncate/week/variance_preal.csv, week, 161.135756992, variance, LineChart, False, True, 366
+data/truncate/week/sum_preal.csv, week, 410550.9, sum, LineChart, False, True, 366
+data/truncate/week/min_preal.csv, week, 35.8, minimum, LineChart, False, True, 366
+data/truncate/week/avg_preal.csv, week, 40.7292559524, average, LineChart, False, True, 366
+data/truncate/week/max_preal.csv, week, 73.7, maximum, LineChart, False, True, 366
+data/truncate/month/stddev_preal.csv, month, 12.149253913, standard deviation, LineChart, False, True, 722
+data/truncate/month/variance_preal.csv, month, 147.604370642, variance, LineChart, False, True, 722
+data/truncate/month/sum_preal.csv, month, 1795258.3, sum, LineChart, False, True, 722
+data/truncate/month/min_preal.csv, month, 33.7, minimum, LineChart, False, True, 722
+data/truncate/month/avg_preal.csv, month, 40.4848074148, average, LineChart, False, True, 722
+data/truncate/month/max_preal.csv, month, 73.7, maximum, LineChart, False, True, 722
+data/cumulative/sum.csv, cumulative, 30710760.5, sum, LineChart, False, True, all
+data/truncate/day/stddev_preal.csv, day, 16.1522084439, standard deviation, LineChart, False, True, 14
+data/truncate/day/variance_preal.csv, day, 260.893837614, variance, LineChart, False, True, 14
+data/truncate/day/sum_preal.csv, day, 60038.3, sum, LineChart, False, True, 14
+data/truncate/day/min_preal.csv, day, 38.6, minimum, LineChart, False, True, 14
+data/truncate/day/avg_preal.csv, day, 42.1601626016, average, LineChart, False, True, 14
+data/truncate/day/max_preal.csv, day, 73.7, maximum, LineChart, False, True, 14
+data/truncate/hour/stddev_preal.csv, hour, 13.5843050846, standard deviation, LineChart, False, True, 2
+data/truncate/hour/variance_preal.csv, hour, 184.533344633, variance, LineChart, False, True, 2
+data/truncate/hour/sum_preal.csv, hour, 4610.8, sum, LineChart, False, True, 2
+data/truncate/hour/min_preal.csv, hour, 60.1, minimum, LineChart, False, True, 2
+data/truncate/hour/avg_preal.csv, hour, 62.4983333333, average, LineChart, False, True, 2
+data/truncate/hour/max_preal.csv, hour, 76.0, maximum, LineChart, False, True, 2

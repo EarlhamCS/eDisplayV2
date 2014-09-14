@@ -1,0 +1,10 @@
+> make different panels on the left more distinct
+> houses
+> cumulative
+> custom tooltips?
+> custom buttons
+
+/etc/apt/sources
+add repositories
+apt-get update
+apt-get install wview

@@ -1,0 +1,8 @@
+area::rgb
+Bundy::rgb(250, 0, 100)
+Barrett::rgb(0, 0, 125)
+Hoerner::rgb(50, 250, 50)
+Mills::rgb(0, 100, 50)
+OA::rgb(0, 100, 200)
+Warren::rgb(250, 200, 100)
+Wilson::rgb(200, 100, 50)

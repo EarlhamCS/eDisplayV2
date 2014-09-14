@@ -1,0 +1,546 @@
+// Used to create an edisplay.
+// Constructed from modular parts.
+
+// required libraries:
+/*
+ jquery
+ https://www.google.com/jsapi
+ 
+ io.js
+ helper.js
+ energy.js
+ interval.js
+ columnFilter.js
+ listFilter.js
+ rangeFilter.js
+ chart.js
+ */
+
+google.load('visualization', '1.0', {'packages':['corechart', 'controls']});
+google.setOnLoadCallback(initialize);
+
+// charts
+var dashboard;
+var chart;
+var cumulative;
+
+// controls
+// var file;
+var range;
+var aggregate;
+
+// files on the server
+var files;
+var file_types;
+var file_data;
+var file_data_header;
+var file_current;
+var file_cumulative;
+var file_default_range = "day";
+
+// variables
+var colors_file = "column_colors.csv";
+
+// options for chart
+var chart_options = {
+	chartType:'AreaChart',
+	containerId:'line',
+	options : {
+		width:'100%',
+		title: 'Electricity Usage',
+		selectionMode:'single',
+		areaOpacity:0.2,
+		lineWidth:3,
+		pointShape:'circle',
+		pointSize:0,
+		chartArea: {
+				left:"10%", top:"10%", width:"90%", height:"80%"
+			},
+		explorer: {
+				actions: [
+					'dragToZoom',
+					'rightClickToReset'
+				],
+				keepInBounds:true,
+				zoomDelta:0.5,
+				maxZoomIn:0.2,
+				maxZoomOut:1
+			},
+		vAxis: {
+			format:"#,##0 kw/h",
+			minValue:0
+		},
+		legend: {
+			position:'top'
+		}
+	}
+};
+
+// options for cumulative
+var cumulative_options = {
+//	chartType:'ColumnChart',
+//	containerId:'cumulative',
+//	options : {
+		width:'100%',
+		height:'100%',
+		title: 'Cumulative',
+		selectionMode:'single',
+		legend:{position:'none'},
+		chartArea: {
+				left:"10%", top:"10%", width:"80%", height:"70%"
+		},
+		bar: {
+			groupWidth:"100%"
+		},
+		vAxis: {
+			format:"#,##0 kw/h",
+			logScale:'true',
+				color:'transparent'
+			}
+		},
+		hAxis: {
+			//format:"##E00 kw/h",
+			format:"###,###,### kw/h",
+			minValue:0,
+			slantedText:true,
+			slantedTextAngle:90,
+			
+			gridlines: {
+				count:3
+			}
+		}
+//	}
+};
+
+// options for the range
+var range_options = {
+	controlType:'ChartRangeFilter',
+	containerId:'range_filter',
+	options:{
+		filterColumnLabel:'Date',
+		ui:{
+			chartType:'AreaChart',
+			chartOptions:{
+				chartArea:{
+					left:'0%', top:'0%',
+					width:'100%', height:'100%'
+				}
+			},
+			snapToData:'true'
+		}
+	}
+}
+
+// --- functions used by events --- //
+// --- functions used by events --- //
+// --- functions used by events --- //
+// --- functions used by events --- //
+// --- functions used by events --- //
+
+function aggregateChange() {
+	clearEnergyStatistics();
+
+	if(file_current) {
+		loadData(getFile(file_current.formatted));
+	} else {
+		loadData(getFile(file_default_range));
+	}
+}
+
+function columnChange() {
+	log.function("columnChange()", log.methods.info);
+	chart.columnChange();
+	draw();
+	clearEnergyStatistics();
+}
+
+function getEnergyStatistics() {
+	if(typeof chart.chart.getChart() == "undefined") {
+		return;
+	}
+
+	var selection = chart.chart.getChart().getSelection()[0];
+	var marker = document.getElementById("line_marker");
+	
+	if(typeof selection == "undefined" || typeof selection == "null") {
+		marker.style.display = "none";
+		return;
+	} else {
+		marker.style.display = "block";
+	}
+
+	range.interval.fromRangeFilter(range.filter);
+	
+	var start_value = String(range.interval.start);
+	var start_index;
+	var data = chart.file.data;
+	var record;
+	for(r = 0; r < data.length; r++) {
+		//log.message(String(data[r][0]) + " == " + start_value);
+		if(String(data[r][0]) == start_value) {
+			start_index = r;
+			record = data[start_index + selection.row];
+			break;
+		}
+	}
+
+	var kwh = record[selection.column];
+	var stats = document.getElementById('energy_statistics');
+
+	document.getElementById('lightbulbHours').innerHTML = "lightbulb hours: " + helper.decimal.toFixed(energy.kwh.toLightbulbHours(kwh));
+	document.getElementById('gasolineGallons').innerHTML = "gallons of gasoline: " + helper.decimal.toFixed(energy.kwh.toGallonsOfGasoline(kwh));
+	document.getElementById('treesPlanted').innerHTML = "trees planted: " + helper.decimal.toFixed(energy.kwh.toTreesPlanted(kwh));
+
+	helper.html.setMarker(chart.chart.getChart(), kwh, new Date(record[0]), marker);
+}
+
+function clearEnergyStatistics() {
+	if(chart.chart.getChart()) {
+		chart.chart.getChart().setSelection([]);
+		getEnergyStatistics();
+	}
+}
+
+function toggleGlobalMaximum() {
+	chart.toggleGlobalMaximum();
+	clearEnergyStatistics();
+}
+
+// loads data for the appropriate resolution
+function rangeChange() {
+	var state = range.filter.getState();
+	var days = helper.date.daydiff(state.range.start, state.range.end);
+	var file = helper.getFileForResolution(file_current, file_data, days);
+
+	if(file != file_current) {
+		log.message(log.prefix("file changed", file.string), log.methods.info);
+		file_current = file;
+		chart.setFile(file);
+		draw();
+	}
+
+	clearEnergyStatistics();
+}
+
+// moves range left by the current interval
+function rangeLeft() {
+	range.left();
+	draw();
+	clearEnergyStatistics();
+}
+
+// moves range right by the current interval
+function rangeRight() {
+	range.right();
+	draw();
+	clearEnergyStatistics();
+}
+
+// sets the interval to the bounds of the range
+function rangeMaximize() {
+	range.toggleMaximize('btn_zoom');
+	draw();
+	rangeChange();
+	clearEnergyStatistics();
+}
+
+// toggles if the left column is displayed or not
+var left_displayed = true;
+function toggleLeftColumn() {
+	var elements = [document.getElementById('left')];
+	
+	var center = document.getElementById("center");
+	left_displayed = !left_displayed;
+	
+	for(i = 0; i < elements.length; i++) {
+		if(left_displayed) {
+			elements[i].style.width = "10%";
+			elements[i].style.display = "block";
+		} else {
+			elements[i].style.width = "0%";
+			elements[i].style.display = "none";
+		}
+	}
+
+	setCenterWidth();
+	draw();
+	clearEnergyStatistics();
+}
+
+
+// toggles if the left column is displayed or not
+var right_displayed = true;
+function toggleRightColumn() {
+	var elements = [document.getElementById('right')];
+	right_displayed = !right_displayed;
+	
+	for(i = 0; i < elements.length; i++) {
+		if(right_displayed) {
+			elements[i].style.display = "block";
+			elements[i].style.width = "10%";
+		} else {
+			elements[i].style.display = "none";
+			elements[i].style.width = "0%";
+		}
+	}
+
+	setCenterWidth();
+	draw();
+	clearEnergyStatistics();
+}
+
+// toggles if range is displayed or not
+function toggleRange() {
+	range.toggleDisplayed();
+	
+	if(range.isDisplayed)
+		helper.setElementHeight('line', "80%");
+	else
+		helper.setElementHeight('line', "98%");
+
+	draw();
+	clearEnergyStatistics();
+}
+
+function setCenterWidth() {
+	var width = 93;
+	
+	if(left_displayed) {
+		width -= 12;
+	}
+	
+	if(right_displayed) {
+		width -= 12;
+	}
+	
+	var center = document.getElementById("center");
+	center.style.width = width + "%";
+}
+
+
+
+var count = 0;
+// standardizes draw calls
+function draw() {
+	count++;
+	log.function("draw() " + count.toString(), log.methods.info);
+	dashboard.draw(chart.view);
+	//cumulative.dashboard.draw(cumulative.table);
+}
+
+
+// --- core functions --- //
+// --- core functions --- //
+// --- core functions --- //
+// --- core functions --- //
+// --- core functions --- //
+
+// returns the array of the file that's currently selected
+// gets file name and file aggregate
+// which together are a primary key (UID) for the file_data array
+function getFile(file_name) {
+	var file_aggregate = aggregate.getSelected();
+	
+	var array;
+	
+	// iterates through file_data array looking for the correct file
+	// the name and aggregate server as a unique ID for the file
+	for(i = 0; i < file_data.length; i++) {
+		if(file_name == file_data[i].formatted &&
+		   file_aggregate == file_data[i].aggregate) {
+			
+			array = file_data[i];
+			break;
+		}
+	}
+
+	return array;
+}
+
+// converts an array of files to an array of objects
+// JSON is bothersome, so this is the alternative
+function filesToObjects(array) {
+	// get headers for file_data
+	headers = array.splice(0,1)[0];
+
+	var objects = [];
+	
+	for(var i = 0; i < array.length; i++) {
+		objects.push(fileToObject(array[i], headers));
+	}
+
+	return objects;
+}
+
+// converts a string array representing a file to an object
+// JSON is bothersome, so this is the alternative
+function fileToObject(array, h) {
+	var o = {};
+	var a = array;
+	var index = 0;
+	
+	headers = [
+		"string", "formatted", "max",
+		"aggregate", "chartType", "isDefault",
+		"isDate", "interval"
+	]
+	
+	index = $.inArray("string", h);
+	if(index >= 0)
+		o.string = a[$.inArray("string", h)];
+
+	index = $.inArray("formatted", h);
+	if(index >= 0)
+		o.formatted = a[$.inArray("formatted", h)];
+
+	index = $.inArray("max", h);
+	if(index >= 0)
+		o.max = a[$.inArray("max", h)];
+
+	index = $.inArray("aggregate", h);
+	if(index >= 0)
+		o.aggregate = a[$.inArray("aggregate", h)];
+
+	index = $.inArray("chartType", h);
+	if(index >= 0)
+		o.chartType = a[$.inArray("chartType", h)];
+
+	index = $.inArray("isDefault", h);
+	if(index >= 0)
+		o.isDefault = a[$.inArray("isDefault", h)];
+
+	index = $.inArray("isDate", h);	
+	if(index >= 0)
+		o.isDate = a[$.inArray("isDate", h)];
+
+	index = $.inArray("interval", h);
+	if(index >= 0)
+		o.interval = a[$.inArray("interval", h)];
+
+	return o;
+}
+
+// the most important function here
+// loads data from the file and performs all initialization
+function loadData(file) {
+	log.start("chart.loadData", log.methods.info);
+	
+	dashboard = new google.visualization.Dashboard(document.getElementById('dashboard'));
+
+	log.message("making chart", log.methods.info);
+	if(!chart) {
+		chart = new Chart(file, 'line', chart_options, colors, "column_filter");
+		chart.draw = draw;
+		google.visualization.events.addListener(chart.column_filter.filter, 'statechange', columnChange);
+	} else {
+		chart.initialize(file, 'line', chart_options, colors, "column_filter");
+	}
+
+	log.message("making cumulative", log.methods.info);
+	//if(!cumulative) {
+	//	cumulative = new Chart(file_cumulative, 'cumulative', cumulative_options, colors);
+	//	//cumulative.draw = draw;
+	//} else {
+	//	//cumulative.initialize(file_cumulative, 'cumulative', cumulative_options, colors);
+	//}
+
+	cumulative = {};	
+	cumulative.data = io.getData(file_cumulative.string);
+	cumulative.data = io.csvToArray(cumulative.data, ", ");
+	cumulative.data = helper.castData(cumulative.data, false);
+	cumulative.data[0].splice(0, 0, "index");
+	for(r = 1; r < cumulative.data.length; r++) {
+		cumulative.data[r].splice(0, 0, r);
+	}
+	cumulative.table = new google.visualization.arrayToDataTable(cumulative.data);
+	cumulative.chart = new google.visualization.BarChart(document.getElementById("cumulative"));
+	cumulative.chart.draw(cumulative.table, cumulative_options);
+	//cumulative.chart = new google.visualization.ChartWrapper(cumulative_options);
+	//cumulative.dashboard = new google.visualization.Dashboard(document.getElementById('cumulative_dashboard'));
+	//cumulative.dashboard.draw(cumulative.table);
+	
+	google.visualization.events.addListener(chart.chart, 'select', getEnergyStatistics);
+
+	// make or initialize range filter
+	if(!range) {
+		range = new rangeFilter(file, chart.table, range_options);
+		google.visualization.events.addListener(range.filter, 'statechange', rangeChange);
+	} else {
+		range.initialize(file, chart.table, range_options, file.isDate);
+	}
+	
+	// establish dependencies
+	dashboard.bind(range.filter, chart.chart);
+	
+	draw();
+	log.finish("chart.loadData", log.methods.info);
+}
+
+function initialize() {
+	// get colors of columns
+	var text = io.getData(colors_file);
+	colors = io.csvToArray(text, "::");
+
+	// get list of available files
+	var text = io.getData("files.csv");
+	files = io.csvToArray(text, ", ");
+	
+	// splice first column
+	file_types = [];
+	for(i = 0; i < files.length; i++) {
+		file_types.push(files[i][0]);
+		files[i].splice(0,1);
+	}
+
+ 	// get file data
+	var text = io.getData("file_data.csv");
+	file_data = io.csvToArray(text, ", ");
+	
+	// cast files to objects so that they're easier to work with
+	file_data = filesToObjects(file_data);
+
+	// cast variables
+	for(i = 0; i < file_data.length; i++) {
+		var item = file_data[i];
+		item.isDate = item.isDate.toLowerCase() == "true";
+		item.isDefault = item.isDefault.toLowerCase() == "true";
+		item.max = parseFloat(item.max);
+		item.interval = parseFloat(item.interval);
+	}
+
+	// get cumulative file
+	for(i = 0; i < file_data.length; i++) {
+		if(file_data[i].formatted == "sum") {
+			file_cumulative = file_data[i];
+			log.message(file_data[i], log.methods.info);
+			break;
+		}
+	}
+
+	// initialize center width
+	setCenterWidth();
+
+	// get file's supported aggregates
+	var array = files[$.inArray(file_default_range, file_types)];
+	
+	// initialize aggregate
+	if(!aggregate) {
+		aggregate = new listFilter("aggregate_filter", array); 
+		google.visualization.events.addListener(aggregate.filter, 'statechange', aggregateChange);
+	} else {
+		aggregate.setData(array);
+	}
+
+	// get first file
+	file_current = getFile(file_default_range);
+
+	// load data
+	loadData(file_current);
+
+	// redraw chart on resize
+	if(window.addEventListener) {
+		window.addEventListener('resize', draw);
+	} else {
+		window.attachEvent("onresize", draw);
+	}
+}

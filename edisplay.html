@@ -1,0 +1,89 @@
+<!doctype html>
+
+<html>
+  <head>
+	<title>eDisplay</title>
+
+	<!--make sure references are correct-->
+	<link rel="stylesheet" type="text/css" href="theme.css" />
+
+	<!--external libraries-->
+	<script type="text/javascript" src="javascript/jquery-1.11.1.js"></script>  
+	<script type="text/javascript" src="javascript/json2.js"></script>  
+	<script type="text/javascript" src="javascript/jsapi"></script>
+	
+	<!--additional functionality-->
+	<script type="text/javascript" src="javascript/io.js"></script>
+	<script type="text/javascript" src="javascript/helper.js"></script>
+	<script type="text/javascript" src="javascript/energy.js"></script>
+	<script type="text/javascript" src="javascript/interval.js"></script>
+
+	<!--custom google charts libraries-->
+	<script type="text/javascript" src="javascript/columnFilter.js"></script>
+	<script type="text/javascript" src="javascript/listFilter.js"></script>
+	<script type="text/javascript" src="javascript/rangeFilter.js"></script>
+	<script type="text/javascript" src="javascript/Chart.js"></script>
+	<script type="text/javascript" src="javascript/Buttons.js"></script>
+	
+	<!--core functionality-->
+	<script type="text/javascript" src="javascript/edisplay.js"></script>
+  </head>
+
+  <body id="body">
+	<div class="wrap">
+	<!-- <button id="left_toggle" onclick="toggleLeftColumn()"></button> -->
+	<div id="left" class="left">
+		<div id="column_filter">
+			column filter</br>
+		</div>
+
+		<div id="aggregate_filter">
+			aggregate filter</br>
+		</div>
+		
+	</div>
+
+	<div id="center" class="center">
+		<div id="dashboard">
+			<div id="line">
+				charts</br>
+			</div>
+
+			<span id="line_marker">
+				<div id="line_marker_contents">
+					<div id="lightbulbHours">lightbulb hours: </div>
+					<div id="gasolineGallons">gallons of gasoline: </div>
+					<div id="treesPlanted">trees planted: </div>
+				</div>
+			</span>
+
+			<button id="range_filter_toggle" onclick="toggleRange()"></button>
+
+			<div id="range_filter_container">
+				<div id="range_filter_buttons" class="buttons">
+					<button id="btn_left" class="button_left" onclick="rangeLeft()" value="left">left</button> </br>
+					<button id="btn_zoom" class="button_center" onclick="rangeMaximize()" value="zoom">zoom out</button> </br>
+					<button id="btn_right" class="button_right" onclick="rangeRight()" value="right">right</button> </br>
+				</div>
+				
+				<div id="range_filter">
+					range filter</br>
+				</div>
+
+			</div>
+		</div>
+	</div>
+
+	<div id="right" class="right">
+		<div id="cumulative_dashboard">
+			<div id="cumulative">
+				cumulative</br>
+			</div>
+		</div>
+	</div>
+	<button id="right_toggle" onclick="toggleRightColumn()"></button>
+
+
+	</div>
+  </body>
+</html>
